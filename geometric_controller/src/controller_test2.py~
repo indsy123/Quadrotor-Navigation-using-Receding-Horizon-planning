@@ -1,0 +1,169 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct  12 13:30:01 2017
+This is the main controller as proposed by T Lee in his paper: 
+"Geomentric tracking control of a quadrotor in SE(3)"
+"""
+__author__ = 'Indrajeet yadav'
+__version__ = '0.1'
+__license__ = 'Nil'
+
+
+import rospy
+import time
+import numpy as np
+#from geometry_msgs.msg import PoseWithCovariance, TwistWithCovariance
+#from tf import TransformListener, TransformerROS
+from nav_msgs.msg import Odometry
+from pyquaternion import Quaternion 
+from parameters import parameters
+from isy_geometric_controller.msg import Desired_Trajectory, control_inputs
+import message_filters
+from numpy import array as ar # just to reduce typing 
+from numpy import transpose as tp # just to reduce typing 
+#from trajectory import tajectory 
+
+class controller(object): 
+    def __init__(self, name_of_uav,parameters): 
+        self.uav = name_of_uav
+        self.m = parameters[0]
+        self.J = parameters[1]
+        self.kx = parameters[2]
+        self.kv = parameters[3]
+        self.kR = parameters[4]
+        self.g = parameters[5]
+        self.kOmega = parameters[6]
+        self.d = parameters[7]
+        self.tau_m = parameters[8]
+        self.tau_t = parameters[9]
+        self.e = parameters[10]
+        self.counter = 0
+
+        #self.tf = TransformListener() # not needed right now
+        #self.tf2 = TransformerROS() # not needed right now
+        #rospy.init_node('odometry_values', anonymous=True)
+        self.pub = rospy.Publisher('/control_inputs', control_inputs, queue_size = 150)
+        try:
+            odom = message_filters.Subscriber('/pelican/odometry_sensor1/odometry', Odometry)
+            traj = message_filters.Subscriber('/desired_trajectory', Desired_Trajectory)
+            ts = message_filters.TimeSynchronizer([odom, traj], 10)
+            ts.registerCallback(self.callback)
+            #rospy.spin()
+        except:
+            print('problem subscribing to one of the topic above')
+   
+    def callback(self, odom, traj): 
+        #p, o = self.tf.lookupTransform('world', 'pelican/odometry_sensor1', rospy.Time())
+
+        # X: current position, V: current velocity, R: current rotation matrix, Wc: current angular velocity
+        X = ar([[odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z]])
+        q = Quaternion(odom.pose.pose.orientation.w, odom.pose.pose.orientation.x,\
+                        odom.pose.pose.orientation.y, odom.pose.pose.orientation.z)
+        R = q.rotation_matrix
+        V = ar([[odom.twist.twist.linear.x, odom.twist.twist.linear.y, odom.twist.twist.linear.z]])
+        # CROSSCHECK AND MAKE SURE THAT THE ANGULAR VELOCITY IS IN INERTIAL FRAME...HOW?
+        Omega = ar([[odom.twist.twist.angular.x, odom.twist.twist.angular.y, odom.twist.twist.angular.z]])
+        Omega_hat = ar([[0,-Omega[0][2], Omega[0][1]], [Omega[0][2],0,-Omega[0][0]], [-Omega[0][1], Omega[0][0], 0]])
+
+        # Xd = desired position, Vd = desired velocity, ad = desired acceleration b1d: desired heading direction 
+        Xd = ar([[traj.desired_position.x, traj.desired_position.y, traj.desired_position.z]])
+        Vd = ar([[traj.desired_velocity.x, traj.desired_velocity.y, traj.desired_velocity.z]])
+        ad = ar([[traj.desired_acceleration.x, traj.desired_acceleration.y, traj.desired_acceleration.z]])
+        b1d = ar([[traj.desired_direction.x, traj.desired_direction.y, traj.desired_direction.z]])
+        b1d_dot = ar([[traj.desired_direction_dot.x, traj.desired_direction_dot.y, traj.desired_direction_dot.z]])
+
+        # errors
+        ex = np.subtract(X, Xd) ; ev = np.subtract(V, Vd)
+        _b3c = -np.dot(self.kx, tp(ex)) - np.dot(self.kv, tp(ev)) - \
+                        self.m*self.g*tp(self.e[:,2][np.newaxis]) + self.m*tp(ad) # calculate desired direction 
+        b3c = ar(-_b3c/np.linalg.norm(_b3c)) # get a normalized vector
+        b2c = tp(np.cross(tp(b3c),b1d)/np.linalg.norm(np.cross(tp(b3c), b1d))) # vector b2d 
+        b1c = tp(np.cross(tp(b2c), tp(b3c)))
+        Rc = np.column_stack((b1c, b2c, b3c)) # desired rotation matrix
+            
+        #------------------determine desired Omega_c: from v3 of paper at arxiv.org -----------------------
+        # first determine current acceleration and desired jerk as they are needed to find derivatives
+        # both of these are determined from approximate numerical differentiation
+        if self.counter != 0:
+            V_dot = np.subtract(V, self._V)/(time.time()-self.previous_time) # current acceleration
+            ad_dot = np.subtract(ad, self._ad)/(time.time()-self.previous_time) # desired jerk             
+            self.previous_time = time.time(); self._V = V; self._ad = ad
+        else: 
+            V_dot = np.zeros((1,3)); self._V = V; ad_dot = np.zeros((1,3)); self._ad = ad
+            self.previous_time = time.time()        
+        # Notice that Rc = [b1c, b2c, b3c], these vectors need to be differentiated to get Rd_dot
+        # let _b3c = A and C = b3c x b1d; C_dot = b3c_dot x b1d + b3c x b1d_dot
+        A = _b3c;
+        ex_dot =  np.subtract(V, Vd) ; ev_dot = np.subtract(V_dot, ad)
+        A_dot = -np.dot(self.kx, tp(ex_dot)) - np.dot(self.kv, tp(ev_dot)) - self.m*tp(ad_dot) # calculate desired direction 
+        b3c_dot = -A_dot/np.linalg.norm(A) + (np.dot(tp(A),A_dot)/np.linalg.norm(A)**3)*A
+        C = tp(np.cross(tp(b3c),b1d))
+        C_dot = tp(np.cross(tp(b3c_dot), b1d) + np.cross(tp(b3c), b1d_dot))
+        b2c_dot = -C_dot/np.linalg.norm(C) + (np.dot(tp(C),C_dot)/np.linalg.norm(C)**3)*C
+        b1c_dot = tp(np.cross(tp(b2c_dot), tp(b3c)) + np.cross(tp(b2c), tp(b3c_dot)))
+        Rd_dot = np.column_stack((b1c_dot, b2c_dot, b3c_dot)) # desired rotation matrix derivative
+        Omega_c_hat = np.dot(tp(Rc),Rd_dot) # skew-symmetric desired angular velocity 
+        Omega_c = tp(ar([[-Omega_c_hat[1][2], Omega_c_hat[0][2], -Omega_c_hat[0][1]]]))   
+        
+
+        eR_hat = 0.5*(np.dot(tp(Rc), R) - np.dot(tp(R), Rc)) # eR skew symmetric matrix	
+        eR = tp(ar([[-eR_hat[1][2], eR_hat[0][2], -eR_hat[0][1]]])) # vector that gives error in rotation 
+        eOmega = tp(Omega) - np.dot(np.dot(tp(R), Rc), Omega_c) # vector that gives error in angular velocity
+        #print Rd_dot, Omega_d_hat
+        
+        # calculate time derivative of Rd using time discretization of Rd
+        #if self.counter != 0:
+        #    Rd_dot = np.subtract(Rd, self._Rd)/(time.time()-self.previous_time)
+        #    self.previous_time = time.time(); self._Rd = Rd
+        #else: 
+        #    Rd_dot = np.zeros((3,3)); self._Rd = Rd; self.previous_time = time.time()
+
+
+        #Omega_d_hat = np.dot(tp(Rd),Rd_dot) # skew-symmetric desired angular velocity 
+        #Omega_d_hat = np.zeros((3,3))
+        #Omega_d = tp(ar([[-Omega_d_hat[1][2], Omega_d_hat[0][2], -Omega_d_hat[0][1]]]))        
+
+        # calculate time derivative of Omega_d using numerical discretization
+        if self.counter != 0: 
+            Omega_c_dot = np.subtract(Omega_c, self._Omega_c)/(time.time()-self.previous_time)
+            self.previous_time = time.time(); self._Omega_c = Omega_c
+        else: 
+             Omega_c_dot = tp(np.zeros((1,3))); self._Omega_c = Omega_c; self.previous_time = time.time()
+ 
+        self.f = np.dot(tp(-_b3c), np.dot(R, tp(self.e[:,2][np.newaxis])))
+        A = np.dot(np.dot(Omega_hat.dot(tp(R)),Rc),Omega_c)
+        B = np.dot(np.dot(tp(R),Rc), Omega_c_dot)
+        self.M = -np.dot(self.kR, eR) - np.dot(self.kOmega, eOmega) + \
+        tp(np.cross(Omega, tp(np.dot(self.J, tp(Omega))))) #- np.dot(self.J,A-B)
+        #print self.f, self.M
+        # publish control inputs on a topic
+        Msg = control_inputs()
+        Msg.header.stamp = rospy.Time.now()
+        Msg.Total_thrust = self.f[0][0]
+        Msg.Moment_x = self.M[0][0]
+        Msg.Moment_y = self.M[1][0]
+        Msg.Moment_z = self.M[2][0]
+
+        
+        self.pub.publish(Msg)
+
+        self.counter+=1
+
+
+if __name__ == '__main__':
+    rospy.init_node('controller', anonymous=False, log_level=rospy.DEBUG)
+    r = rospy.Rate(10)
+    p = parameters("Pelican")
+    parameter_list = [p.mass(), p.inertia(), p.kx(), p.kv(), p.kR(), p.gravity(),\
+                      p.kOmega(), p.CG_to_CoR(), p.tau_m(), p.tau_t(), p.identity()]
+
+    try: 
+        while not rospy.is_shutdown(): 
+            c = controller("pelican", parameter_list)
+            rospy.spin()
+            r.sleep()
+
+    except rospy.ROSInterruptException(): 
+        pass
+

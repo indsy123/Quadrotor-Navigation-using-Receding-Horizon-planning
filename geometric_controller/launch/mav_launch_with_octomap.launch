@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="mav_name" default="firefly"/>
+  <arg name="world_name" default="basic"/>
+  <arg name="enable_logging" default="false"/>
+  <arg name="image_def" default="vi_sensor/camera_depth/depth"/>
+
+  <group ns="$(arg mav_name)">
+      <node pkg="geometric_controller" name="firefly_PositionVelocityController" type="position_velocity_controller_R5_test.py" respawn="true"/>
+      <node pkg="geometric_controller" name="navfunc3d_nobstacle" type="3DNF_SW_nObstacle_R1_ROSnode.py" respawn="true" output="screen"/>
+      <remap from="odometry" to="odometry_sensor1/odometry" />	
+     
+  </group>
+
+  <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
+  <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+  <node pkg="nodelet" type="nodelet" name="$(arg mav_name)_voxel_grid" args="load pcl/VoxelGrid pcl_manager" output="screen">
+    <remap from="~input"                to="/$(arg mav_name)/$(arg image_def)/points" />
+    <remap from="~output"               to="/$(arg mav_name)/$(arg image_def)/voxel_points" />
+    <param name="leaf_size"             value="0.1"/>
+    <param name="filter_limit_negative" value="true"/>
+  </node> 
+
+ <!-- Run Octomap server node -->	
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+    <param name="resolution" value="0.05" />		  	
+    <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->		    
+    <param name="frame_id" type="string" value="world" />		
+    <!-- maximum range to integrate (speedup!) -->		
+    <param name="sensor_model/max_range" value="3.0" />		
+    <!-- data source to integrate (PointCloud2) -->		
+    <remap from="cloud_in" to="/$(arg mav_name)/$(arg image_def)/voxel_points" />
+  </node>
+
+</launch>

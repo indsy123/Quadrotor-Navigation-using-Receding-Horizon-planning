@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct  12 13:30:01 2017
+This is the main controller as proposed by T Lee in his paper: 
+"Geomentric tracking control of a quadrotor in SE(3)"
+"""
+__author__ = 'Indrajeet yadav'
+__version__ = '0.1'
+__license__ = 'Nil'
+
+
+import rospy
+import time
+import numpy as np
+#from geometry_msgs.msg import PoseWithCovariance, TwistWithCovariance
+#from tf import TransformListener, TransformerROS
+from nav_msgs.msg import Odometry
+from pyquaternion import Quaternion 
+from parameters import parameters
+from isy_geometric_controller.msg import Desired_Trajectory, control_inputs
+#import message_filters
+from numpy import array as ar # just to reduce typing 
+from numpy import transpose as tp # just to reduce typing 
+from mav_msgs.msg import Actuators
+#from trajectory import tajectory 
+
+class motor_speeds(object): 
+    def __init__(self, name_of_uav,parameters): 
+        self.uav = name_of_uav
+        self.d = parameters[0]
+        self.tau_m = parameters[1]
+        self.tau_f = parameters [2]
+        self.pub = rospy.Publisher('/pelican/command/motor_speed', Actuators, queue_size = 150)
+        try:
+            rospy.Subscriber('/control_inputs', control_inputs, self.callback)
+        except:
+            print('problem subscribing to topic "/control_inputs"')
+   
+    def callback(self, data): 
+        f = data.Total_thrust; M1 = data.Moment_x
+        M2 = data.Moment_y; M3 = data.Moment_z
+        T = tp(ar([[f,M1,M2,M3]]))
+        #print T
+        #c1 = tp(ar([[self.tau_f, 0, self.d*self.tau_f, -self.tau_m]]))
+        #c2 = tp(ar([[self.tau_f, -self.d, 0, self.tau_m]]))
+        #c3 = tp(ar([[self.tau_f, 0, -self.d*self.tau_f, -self.tau_m]]))
+        #c4 = tp(ar([[self.tau_f, self.d*self.tau_f, 0, self.tau_m]]))
+        
+        c1 = tp(ar([[1, 0, self.d, -self.tau_m]]))
+        c2 = tp(ar([[1, -self.d, 0, self.tau_m]]))
+        c3 = tp(ar([[1, 0, -self.d, -self.tau_m]]))
+        c4 = tp(ar([[1, self.d, 0, self.tau_m]]))
+        C = np.column_stack((c1,c2,c3,c4)) # solving linear eq T = Cw^2 to get w^2
+        w_square = np.dot(np.linalg.inv(C),T)/self.tau_f
+        #w_square = np.dot(np.linalg.inv(C),T)
+	w = np.sqrt(np.abs(w_square))
+	print 'w_square',w_square, 'w', w	
+	Msg = Actuators()
+	Msg.header.stamp = rospy.Time.now()
+	rotor_velocity = np.amax(w) 
+	#Msg.angular_velocities = [rotor_velocity, rotor_velocity, rotor_velocity, rotor_velocity]
+	Msg.angular_velocities = [w[0][0], w[1][0], w[2][0], w[3][0]]
+	self.pub.publish(Msg)
+	rospy.loginfo(Msg)
+        #print w_square
+        
+        
+        
+
+
+        
+
+if __name__ == '__main__':
+    rospy.init_node('motor_speeds', anonymous=False, log_level=rospy.DEBUG)
+    r = rospy.Rate(20)
+    p = parameters("Pelican")
+    parameter_list = [p.CG_to_CoR(), p.tau_m(), p.tau_t()]
+
+    try: 
+        while not rospy.is_shutdown(): 
+            c = motor_speeds("pelican", parameter_list)
+            rospy.spin()
+            r.sleep()
+
+    except rospy.ROSInterruptException(): 
+        pass
+

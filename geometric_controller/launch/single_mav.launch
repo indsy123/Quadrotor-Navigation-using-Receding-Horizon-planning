@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="mav_name" default="firefly"/>
+  <arg name="world_name" default="basic"/>
+  <arg name="enable_logging" default="false"/>
+  <arg name="image_def" default="vi_sensor/camera_depth/depth"/>
+
+  <group ns="firefly1">
+      <rosparam param="initial_position">[-7,7,0.08]</rosparam>
+      <rosparam param="initial_orientation">[1,0,0.0]</rosparam>
+      <rosparam param="goal_point">[0,-9.5, 2]</rosparam>
+      <param name="uav_name" value="firefly"/>
+      <param name="local_name" value="firefly1"/>
+      <param name="number" value="1"/>
+      <param name="uav_velocity" value="2"/>
+      <param name="initial_hovering_height" value="2"/>
+      <param name="publish_frequency" value="100.0"/>
+      <param name="visibility_graph_resolution" value="0.25"/>
+      <param name="uav_radius" value="0.415"/>
+      <param name="sensor_range" value="2.5"/>
+      <param name="camera_fov_x" value="1.0472"/>
+      <param name="camera_fov_y" value="0.7854"/>
+      
+      <node pkg="geometric_controller" name="GeometricController" type="geometric_controller_R3.py" respawn="true" output="screen"/>
+      <node pkg="geometric_controller" name="construct_cloud_for_trajectory" type="construct_cloud_for_trajectory.py" respawn="true" output="screen"/>
+      <node pkg="realsense_pointcloud_analysis" type="filter_realsense_cloud" name="filtered_realsense_pointcloud" respawn="true" output="screen"/>
+      <node pkg="geometric_controller" type="path_in_camera_workspace_rosnode.py" name="trajectory_in_camera_fov" respawn="true" output="screen"/>
+      <!--node pkg="geometric_controller" type="polynomial_trajectory_generation_test.py" name="Trajectory_test" respawn="true" output="screen"/-->
+      
+  </group>
+
+
+</launch>

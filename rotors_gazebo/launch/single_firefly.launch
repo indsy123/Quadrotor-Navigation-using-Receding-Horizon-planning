@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="mav_name" default="firefly"/>
+  <arg name="namespace" default="firefly"/>
+  <arg name="world_name" default="basic"/>
+  <arg name="enable_logging" default="false"/>
+  <arg name="enable_ground_truth" default="true"/>
+  <arg name="paused" value="false"/>
+  <arg name="model" value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
+  <arg name="log_file" default="$(arg mav_name)"/>
+  <arg name="wait_to_record_bag" default="false"/>
+  <arg name="enable_mavlink_interface" default="false"/>
+  <!--arg name="tf_prefix" default="$(optenv ROS_NAMESPACE)"/-->
+
+
+  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
+  <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world"/>
+    <!-- <arg name="debug" value="true"/> -->
+    <arg name="paused" value="$(arg paused)"/>
+    <!-- <arg name="gui" value="false"/> -->
+  </include>
+
+
+  <group ns="firefly1">
+    <include file="$(find rotors_gazebo)/launch/spawn_mav_multiquad.launch">
+      <arg name="mav_name" value="firefly" />
+      <arg name="namespace" value="firefly1"/>
+      <!--param name="tf_prefix" type="string" value="$(arg tf_prefix)" /-->
+      <!--arg name="tf_prefix" value="firefly"/-->
+      <arg name="log_file" value="firefly"/>
+      <!--arg name="model" value="$(find rotors_description)/urdf/mav_generic_odometry_sensor.gazebo" /-->
+      <arg name="model" value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
+      <arg name="enable_logging" value="$(arg enable_logging)" />
+      <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+      <arg name="x" value="-7"/>
+      <arg name="y" value="7"/>  
+      <arg name="Y" value="0"/>     
+    </include>
+
+      <remap from="odometry" to="odometry_sensor1/odometry" />
+      <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+      <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+  </group>
+
+</launch>

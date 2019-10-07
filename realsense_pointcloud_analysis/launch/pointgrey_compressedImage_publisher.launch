@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="mav_name" default="firefly"/>
+  <arg name="world_name" default="basic"/>
+  <arg name="enable_logging" default="false"/>
+
+  <node name="republish_cam1" type="republish" pkg="image_transport" output="screen" args="raw in:=/camera1/image_color compressed out:=/camera1/image_color" />
+  <node name="republish_cam2" type="republish" pkg="image_transport" output="screen" args="raw in:=/camera2/image_color compressed out:=/camera2/image_color" />
+  <node pkg="realsense_pointcloud_analysis" type="pointcloud_from_visensor.py" name="stereo_to_pointcloud" respawn="true" output="screen"/>
+</launch>

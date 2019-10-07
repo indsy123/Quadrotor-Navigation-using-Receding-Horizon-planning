@@ -1,0 +1,121 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct  3 11:17:34 2017
+Defines all the parameters of various acstec helicopters measured from testing
+in the lab. Unless otherwise mentioned the units are SI. however, I may change 
+them as I develop this script, will try to write as much as I can whereever 
+there is a deviation from SI units.  
+defined parameters are as follows: 
+mass: mass of the vehicle
+inertia: moment of inertia of the vehicle 
+CG_to_CoR: distance between center of gravity of the vehicle to the center of 
+rotation of the propeller 
+kx: gain of the position error 
+kv: gain of the velocity error 
+kR: gain of the rotation error 
+kOmega: gain of the angular velocity error 
+tau_t: thrust constant of the propeller (assuming f = tau_t*w^2)
+tau_m: moment constant of the propeller   
+change the diagonal entries in inertia and gain matrices to change the values 
+in x, y and z direction. off-diagonal entries should be zero. May have 
+off-diagonal terms in inertia matrix if there is a reason to do so later. 
+Somehow this long thing is working but its stupid. need to find a way to make 
+it short by calling self.uav outside the function definition.  
+"""
+__author__ = 'Indrajeet yadav'
+__version__ = '0.1'
+__license__ = 'Nil'
+
+import numpy as np
+class parameters(object):
+
+    def __init__(self, name_of_uav): 
+        self.uav = name_of_uav 
+        
+    def mass(self):
+        if self.uav == "Firefly": 
+            mass = 1.59
+        elif self.uav == "Pelican": 
+            mass = 1.0 # I calculated 1.22kg  replace 1 with 1.22
+        elif self.uav == "Hummingbird":
+            mass = 0.75
+        return mass
+
+    def inertia(self):
+        if self.uav == "Firefly": 
+            inertia = np.array([[18.33e-3,0,0],[0,11.4e-3,0],[0,0,11.4e-3]])
+        elif self.uav == "Pelican": 
+            inertia = np.array([[11.4e-3,0,0],[0,11.4e-3,0],[0,0,18.33e-3]])
+        elif self.uav == "Hummingbird":
+            inertia = np.array([[18.33e-3,0,0],[0,11.4e-3,0],[0,0,11.4e-3]])
+        return inertia
+
+    def CG_to_CoR(self):
+        if self.uav == "Firefly": 
+            CG_to_CoR = 0.5
+        elif self.uav == "Pelican": 
+            CG_to_CoR = 0.21
+        elif self.uav == "Hummingbird":
+            CG_to_CoR = 0.5
+        return CG_to_CoR      
+
+    def kx(self):
+        if self.uav == "Firefly": 
+            kx = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        elif self.uav == "Pelican": 
+            kx = np.array([[4,0,0],[0,4,0],[0,0,4]]) 
+        elif self.uav == "Hummingbird":
+            kx = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        return kx
+
+    def kv(self):
+        if self.uav == "Firefly": 
+            kv = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        elif self.uav == "Pelican": 
+            kv = np.array([[2.7,0,0],[0,2.7,0],[0,0,2.7]]) 
+        elif self.uav == "Hummingbird":
+            kv = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        return kv
+
+    def kR(self):
+        if self.uav == "Firefly": 
+            kR = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        elif self.uav == "Pelican": 
+            kR = np.array([[1,0,0],[0,1,0],[0,0,0.35]]) 
+        elif self.uav == "Hummingbird":
+            kR = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        return kR
+
+    def kOmega(self):
+        if self.uav == "Firefly": 
+            kOmega = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        elif self.uav == "Pelican": 
+            kOmega = np.array([[0.22,0,0],[0,0.22,0],[0,0,0.01]]) 
+        elif self.uav == "Hummingbird":
+            kOmega = np.array([[1,0,0],[0,1,0],[0,0,1]]) 
+        return kOmega
+
+    def tau_t(self):
+        if self.uav == "Firefly": 
+            tau_t = 1
+        elif self.uav == "Pelican": 
+            tau_t = 9.86e-6
+        elif self.uav == "Hummingbird":
+            tau_t = 1
+        return tau_t        
+    
+    def tau_m(self):
+        if self.uav == "Firefly": 
+            tau_m = 1
+        elif self.uav == "Pelican": 
+            tau_m = 1.6e-2
+        elif self.uav == "Hummingbird":
+            tau_m = 1
+        return tau_m
+    def gravity(self): 
+        g = 9.81
+        return g
+    def identity(self): 
+        I = np.array([[1,0,0],[0,1,0],[0,0,1]])
+        return I

@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Sep 29 15:10:34 2017
+This is the test script for testing various best practies in python before 
+writing the script to impliment geometric controller 
+@author: indrajeet
+"""
+import numpy as np 
+from pyrr import Quaternion, Matrix33, Matrix44, Vector3
+import pyrr
+from matplotlib import pyplot
+import scipy 
+from parameters import parameters
+from trajectory import trajectory
+import time 
+import rospy 
+import tf, tf2_ros
+from current_pose import current_pose
+uav_name = "Pelican"
+start_time = time.time()
+print("hi")
+pose = current_pose(uav_name)
+print(pose.current_pose())
+"""
+uav_name = "Pelican"
+a = parameters(uav_name)
+print(a.mass())
+
+ep = np.array([[4.0, 0.0, 1.0]])
+et = 10
+a = trajectory(ep,et)
+#print('hi')
+c = a.position()
+d = a.yaw()
+c1 = c[0]
+d1 = d[0]
+#d = a.yaw()
+
+end_time = time.time()
+print("---%s Hz----",1/(end_time-start_time))
+"""
+"""
+class test(object):
+    def __init__(self,q):
+        # defines various parameters 
+        self.q = q
+        self.description = "This is a test script"
+        self.author = "Indrajeet S Yadav"
+    def MatrixOperation(self):
+        #from mathutils import * 
+        #v = Vector3([1,1,1])
+        m1 = Matrix33(self.q)
+        
+        #m2 = pyrr.matrix44.create_from_quaternion(q)
+        #v1 = pyrr.matrix33.apply_to_vector(m1,v)
+        return m1
+q = Quaternion([0,0,0.423,0.906])
+a = test(q)
+m = a.MatrixOperation()
+print(m)
+end_time = time.time()
+print("---%s Hz----",1/(end_time-start_time))
+#print(v,v1,a)
+"""
+"""
+v1 = Vector3([1,0,0])
+v2 = Vector3([0,1,0])
+v3 = Vector3([0,0,1])
+a = v2-v1
+b = v3-v1
+c = a.cross(b)
+c = c.normalized()
+b2 = c.cross(a).normalized()
+a2 = a.normalized()
+m = Matrix([a2, b2, c]).transposed()
+print(m)
+"""
+
+

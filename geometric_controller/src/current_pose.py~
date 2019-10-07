@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct  4 09:13:01 2017
+Eventally this script would take the data from vicon and convert into current 
+pose (position and orientation). Furthermore it would probably use the package 
+tf to get the current velocities, acceleration, angular velocities and angular
+acceleration. Currently it takes all these values from gazebo. Hopfully just 
+changing the node names would suffice. It rerturn a 4x4 matrix on SE(3) that 
+contains both current position and orientation. 
+In addition this script also gives the current linear and angular velocities. 
+@author: indrajeet
+"""
+#import numpy as np 
+#from pyrr import vector3, Quaternion, Matrix44
+import rospy
+#from geometry_msgs.msg import PoseWithCovariance, TwistWithCovariance
+from tf import TransformListener, TransformerROS
+from nav_msgs.msg import Odometry
+#import tf2_ros
+        
+
+class current_pose(object): 
+    def __init__(self, name_of_uav): 
+        self.uav = name_of_uav
+        self.tf = TransformListener()
+	self.tf2 = TransformerROS()
+	rospy.init_node('odometry_values', anonymous=True)
+	try: 
+	    rospy.Subscriber('/pelican/odometry_sensor1/odometry', Odometry, self.callback)
+	    rospy.spin()
+	except: 
+	    print('problem subscribing to /pelican/odometry_sensor1/odometry')
+    
+    def callback(self,data): 
+        #print('hi')
+        pos, ori = self.tf.lookupTransform('world', 'pelican/odometry_sensor1', rospy.Time())
+	matrix = self.tf2.fromTranslationRotation(pos, ori) 
+	print(matrix)	
+	
+	self.position = pos
+	self.orientation = ori
+        #position = self.position
+        #print(self.position)
+        #return self.position
+        
+     
+    def current_pose(self):
+        #print(self.tf.allFramesAsDot())
+        #if self.tf.frameExists("world") and self.tf.frameExists("pelican/odometry_sensor1"): 
+        #t = self.tf.getLatestCommonTime("world","pelican/odometry_sensor1")
+        #topic = rospy.get_param('~topic', 'chatter')
+	print(self.position)
+	return self.position
+"""        
+	while not rospy.is_shutdown():
+	    rospy.init_node('odometry_values', anonymous=True)
+	    print('hi1')
+	    rospy.spin()
+	    print('hi2')
+            try:
+                #print('kitne aadmi the')
+                #print(rospy.get_published_topics(), rospy.get_param())
+                
+                rospy.Subscriber('/pelican/odometry_sensor1/odometry', Odometry, self.callback)
+                #return self.position
+                #posi = self.position; ori = self.orientation
+		print(self.position)  
+                return self.position
+                #rospy.spin()
+		#return self.position
+                #print(self.position)
+                
+                
+            
+            except: 
+                print('problem subscribing to /pelican/odometry_sensor1/odometry')
+                #rospy.spin()  
+"""

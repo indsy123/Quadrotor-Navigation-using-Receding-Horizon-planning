@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_name" default="basic"/>
+  <arg name="enable_logging" default="false"/>
+  <arg name="image_def" default="vi_sensor/camera_depth/depth"/>
+
+  <group ns="hummingbird">
+      <param name="uav_name" value="hummingbird"/>
+      <param name="uav_velocity" value="3.0"/>
+      <param name="initial_hovering_height" value="3.0"/>
+      <node pkg="geometric_controller" name="PositionVelocityController" type="position_velocity_controller_R5_test.py" respawn="true"/>
+      <node pkg="geometric_controller" name="navfunc3d_nobstacle" type="3DNF_MRSpaper_ros.py" respawn="true" output="screen"/>
+      <remap from="odometry" to="odometry_sensor1/odometry" />	     
+  </group>
+
+  <group ns="pelican">
+      <param name="uav_name" value="pelican"/>
+      <param name="uav_velocity" value="4.0"/>
+      <param name="initial_hovering_height" value="2.0"/>
+      <node pkg="geometric_controller" name="PositionVelocityController" type="position_velocity_controller_R5_test.py" respawn="true"/>
+      <node pkg="geometric_controller" name="navfunc3d_nobstacle" type="3DNF_MRSpaper_ros.py" respawn="true" output="screen"/>
+      <remap from="odometry" to="odometry_sensor1/odometry" />	     
+  </group>
+
+  <group ns="firefly">
+      <param name="uav_name" value="firefly"/>
+      <param name="uav_velocity" value="5.0"/>
+      <param name="initial_hovering_height" value="3.0"/>
+      <node pkg="geometric_controller" name="PositionVelocityController" type="position_velocity_controller_R5_test.py" respawn="true"/>
+      <node pkg="geometric_controller" name="navfunc3d_nobstacle" type="3DNF_MRSpaper_ros.py" respawn="true" output="screen"/>
+      <remap from="odometry" to="odometry_sensor1/odometry" />	     
+  </group>
+
+ <node pkg="geometric_controller" name="publish_targets" type="sensor_placement_nlopt_R3_ROS.py" respawn="true" output="screen"/>
+</launch>
