@@ -1,0 +1,165 @@
+<!-- modified launch file "pgeneva_eth_ros.launch" to work with intel 
+realsense t265 --> <launch>
+
+    <!-- mono or stereo and what ros bag to play -->
+    <arg name="max_cameras" default="2" />
+    <arg name="bag"         default="/home/pelican/data_collection/detection_bag.bag" />
+    <arg name="run_number" default="0"/>
+
+    <!-- saving trajectory paths -->
+    <arg name="dosave"      default="true" />
+    <arg name="path_est"    default="/tmp/traj_estimate.txt" />
+    <arg name="path_time"   default="/tmp/traj_timing.txt" />
+
+
+    <!-- MASTER NODE! -->
+    <node name="run_subscribe_msckf" pkg="ov_msckf" type="run_subscribe_msckf" output="screen" clear_params="true" required="true">
+    <!--node name="run_serial_msckf" pkg="ov_msckf" type="run_serial_msckf" output="screen" clear_params="true" required="true"-->
+        <!-- bag topics -->
+        <param name="topic_imu"      type="string" value="/udrone1/t265/imu" />
+        <param name="topic_camera0"  type="string" value="/udrone1/t265/fisheye1/image_raw" />
+        <param name="topic_camera1"  type="string" value="/udrone1/t265/fisheye2/image_raw" />
+
+
+        <!-- bag parameters -->
+        <!--param name="path_bag"    type="string" value="/home/ind/ros_workspace/test_ws/vicon_t265_calibration1.bag" />
+        <param name="bag_start"   type="double" value="0.0" />
+        <param name="bag_durr"    type="int"    value="-1" /-->
+
+
+        <!-- world/filter parameters -->
+        <param name="use_fej"                type="bool"   value="true" />
+        <param name="use_imuavg"             type="bool"   value="true" />
+        <param name="use_rk4int"             type="bool"   value="true" />
+        <param name="calib_cam_extrinsics"   type="bool"   value="true" />
+        <param name="calib_cam_intrinsics"   type="bool"   value="true" />
+        <param name="calib_cam_timeoffset"   type="bool"   value="true" />
+        <param name="calib_camimu_dt"        type="double" value="0.0023261953509" />
+        <param name="max_clones"             type="int"    value="11" />
+        <param name="max_slam"               type="int"    value="50" />
+        <param name="max_cameras"            type="int"    value="$(arg max_cameras)" />
+        <param name="dt_slam_delay"          type="double" value="2" />
+        <param name="feat_representation"    type="string" value="GLOBAL_3D" />
+        <param name="init_window_time"       type="double" value="0.5" />
+        <param name="init_imu_thresh"        type="double" value="0.3" />
+        <rosparam param="gravity">[0.0,0.0,9.81]</rosparam>
+
+        <!-- tracker/extractor properties -->
+        <param name="use_klt"          type="bool"   value="true" />
+        <param name="num_pts"          type="int"    value="350" />
+        <param name="fast_threshold"   type="int"    value="15" />
+        <param name="grid_x"           type="int"    value="10" />
+        <param name="grid_y"           type="int"    value="6" />
+        <param name="min_px_dist"      type="int"    value="10" />
+        <param name="knn_ratio"        type="double" value="0.70" />
+	<param name="fi_min_dist"        type="double" value="0.25" />
+
+        <!-- aruco tag/mapping properties -->
+        <param name="use_aruco"        type="bool"   value="false" />
+        <param name="num_aruco"        type="int"    value="1024" />
+        <param name="downsize_aruco"   type="bool"   value="true" />
+
+        <!-- sensor noise values / update -->
+        <param name="up_msckf_sigma_px"            type="double"   value="0.5" />
+        <param name="up_msckf_chi2_multipler"      type="double"   value="1" />
+        <param name="up_slam_sigma_px"             type="double"   value="1" />
+        <param name="up_slam_chi2_multipler"       type="double"   value="1" />
+        <param name="up_aruco_sigma_px"            type="double"   value="1" />
+        <param name="up_aruco_chi2_multipler"      type="double"   value="1" />
+
+	<!--sensor noise values / propeller on, found working with 10deg -->
+        <param name="gyroscope_noise_density"      type="double"   value="8.14803014084e-03" />
+        <param name="gyroscope_random_walk"        type="double"   value="4.99999998738e-05" />
+        <param name="accelerometer_noise_density"  type="double"   value="0.00892452471 " />
+        <param name="accelerometer_random_walk"    type="double"   value="0.0099999974738" />
+
+
+        <!-- camera intrinsics -->
+        <param name="cam0_is_fisheye" type="bool" value="true" />
+        <param name="cam1_is_fisheye" type="bool" value="true" />
+        <rosparam param="cam0_k">[291.13796, 291.363941, 423.699328, 392.8358365]</rosparam>
+        <rosparam param="cam0_d">[-0.0848522710825053, 0.25362120938018384, -0.2551190188579361, 0.08022766563879905]</rosparam>
+        <rosparam param="cam1_k">[286.52801, 286.56248526, 422.28021, 397.3341035]</rosparam>
+        <rosparam param="cam1_d">[0.041634397718402064, -0.07541171196161034, 0.06973719488574245, -0.026937810584564664]</rosparam>
+
+        <!-- camera extrinsics -->
+        <rosparam param="T_C0toI">
+            [
+            -0.99981617, -0.00241359,  0.01902117,  0.01071215,
+            0.00246341, -0.99999359,  0.00259647,  0.00115544,
+            0.01901478,  0.00264285,  0.99981571,  0.00141113,
+            0.0, 0.0, 0.0, 1.0
+            ]
+        </rosparam>
+        <rosparam param="T_C1toI">
+            [
+            -0.99992173,  0.00085997,  0.01248166, -0.05297098,
+            -0.00079132, -0.99998454,  0.00550389,  0.00074028,
+            0.0124862,   0.00549359,  0.99990695,  0.00267563,
+            0.0, 0.0, 0.0, 1.0
+            ]
+        </rosparam>
+
+    </node>
+
+
+    <!-- play the dataset -->
+    <!--node pkg="rosbag" type="play" name="rosbag" args="-d 1 $(arg bag)" required="true"/-->
+
+    <!-- record the trajectory if enabled -->
+    <group if="$(arg dosave)">
+        <node name="recorder_estimate" pkg="ov_eval" type="pose_to_file" output="screen" required="true">
+            <param name="topic"      type="str" value="/ov_msckf/poseimu" />
+            <param name="topic_type" type="str" value="PoseWithCovarianceStamped" />
+            <param name="output"     type="str" value="$(arg path_est)" />
+        </node>
+        <node name="recorder_timing" pkg="ov_eval" type="pid_ros.py" output="screen" required="true">
+            <param name="nodes"      type="str" value="/run_subscribe_msckf" />
+            <param name="output"     type="str" value="$(arg path_time)" />
+        </node>
+    </group>
+
+  <!--set of commands to start mavros and publish odometry in correct frame-->
+
+
+
+
+  <group ns="udrone1">
+
+  <arg name="fcu_url" default="/dev/ttyACM0:921600" />
+  <arg name="gcs_url" default="udp://@10.42.0.1" />
+  <arg name="tgt_system" default="1" />
+  <arg name="tgt_component" default="1" />
+  <arg name="log_output" default="screen" />
+  <arg name="fcu_protocol" default="v2.0" />
+  <arg name="respawn_mavros" default="false" />
+  <!--arg name="run_number" default="0" /-->
+  <include file="$(find mavros)/launch/node.launch">
+     <arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
+     <arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" />
+     <arg name="fcu_url" value="$(arg fcu_url)" />
+     <arg name="gcs_url" value="$(arg gcs_url)" />
+     <arg name="tgt_system" value="$(arg tgt_system)" />
+     <arg name="tgt_component" value="$(arg tgt_component)" />
+     <arg name="log_output" value="$(arg log_output)" />
+     <arg name="fcu_protocol" value="$(arg fcu_protocol)" />
+     <arg name="respawn_mavros" default="$(arg respawn_mavros)" />     
+  </include>
+      <param name="uav_name" value="udrone"/>
+      <param name="local_name" value="udrone1"/>
+      <param name="number" value="1"/>	
+      <param name="freq" value="62.0"/>	
+      <param name="run_number" value="$(arg run_number)"/>	
+
+      <node pkg="geometric_controller" name="vio_to_cog" type="vio_to_cog.py" respawn="true" output="screen"/>   
+      <node pkg="realsense_pointcloud_analysis" type="filter_realsense_cloud" name="filtered_realsense_pointcloud" respawn="true" output="screen"/>
+      <node pkg="tf" type="static_transform_publisher" name="link1_brodcaster" args="0.12 0.03 0.1 0 0 0.7071068 0.7071068 map global 100"/>
+      <node pkg="tf" type="static_transform_publisher" name="link2_brodcaster" args="0.12 0.02 0.0 0 0 0 1 mav_cog udrone1/d435_link 100"/>
+      <node pkg="geometric_controller" name="fast_odometry_propagation" type="fast_propagate.py" respawn="true" output="screen"/>
+      <node pkg="geometric_controller" name="est_fp_comparison" type="compare_estimates_with_fast_propagate.py" respawn="true"/>
+  </group>
+
+
+
+
+</launch>
