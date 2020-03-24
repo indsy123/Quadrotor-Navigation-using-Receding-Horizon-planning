@@ -12,9 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   octomap_msgs
   message_generation
 )
-#find_package(CGAL REQUIRED  pcl_ros)
+find_package(CGAL REQUIRED  pcl_ros)
 
-#catkin_python_setup()
+catkin_python_setup()
 
 ## Generate messages in the 'msg' folder
 add_message_files(
@@ -44,14 +44,13 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
 )
 
-
 add_definitions(${PCL_DEFINITIONS})
 
 #add_library(${PROJECT_NAME} src/filter_realsense_cloud.cpp)
 #  src/kinect_pc_transform.cpp
 #)
-add_executable(filter_realsense_cloud src/filter_realsense_cloud.cpp)
-target_link_libraries(filter_realsense_cloud ${catkin_LIBRARIES})
+add_executable(filter_cloud_setminpointsperpixel src/filter_cloud_setminpointsperpixel.cpp)
+target_link_libraries(filter_cloud_setminpointsperpixel ${catkin_LIBRARIES})
 
 
 #add_executable(${PROJECT_NAME} src/get_octree_data.cpp)
