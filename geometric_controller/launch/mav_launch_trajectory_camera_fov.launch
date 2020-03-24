@@ -1,0 +1,46 @@
+<?xml version="1.0"?> <launch>
+  <arg name="run_number" default="0"/>
+  <arg name="d435_imagetopic" default="/udrone1/d435/color/image_raw" />
+  <arg name="d435_voxel_cloud" default="/udrone1/d435/depth_registered/voxel_points" />
+  <arg name="transform" default="/tf_static" />
+  <group ns="udrone1">
+      <rosparam param="initial_position">[0,0,0.125]</rosparam>
+      <rosparam param="initial_orientation">[1,0,0]</rosparam>
+      <rosparam param="goal_point">[19.0,0.0, 1.0]</rosparam>
+      <rosparam param="desired_direction">[1, 0, 0]</rosparam>	
+
+      <param name="uav_name" value="udrone"/>
+      <param name="local_name" value="udrone1"/>
+      <param name="number" value="1"/>
+      <param name="uav_velocity" value="2.0"/>
+      <param name="initial_hovering_height" value="1.0"/>
+      <param name="visibility_graph_resolution" value="0.225"/>
+      <param name="uav_radius" value="0.45"/>
+      <param name="sensor_range" value="3.0"/>
+      <param name="camera_fov_x" value="0.95"/>
+      <param name="camera_fov_y" value="0.74"/>
+      <param name="planning_horizon" value = "4"/>		
+      <param name="sensor_update_horizon" value = "3"/>
+      <param name="goal_is" value="static"/>
+      <param name="initial_hovering_time" value="10"/>
+      <param name="velocity_during_hover_land" value="0.2"/>
+      <param name="polynomial_order" value="5"/>
+
+      <rosparam param="kx">[4.4, 4.4, 4.4]</rosparam>
+      <rosparam param="kv">[2.2, 2.2, 2.2]</rosparam>
+      <param name="mass" value="1.75"/>
+      <param name="normalized_thrust_constant" value="29.0"/>
+      <param name="rate_gain_rp" value="0.2"/>
+      <param name="rate_gain_yaw" value="0.275"/>	
+      <param name="run_number" value="$(arg run_number)"/>
+      <param name="do_replanning" value="True"/>     
+
+      <node pkg="geometric_controller" name="sendcommandtopx4" type="px4_offboard_control_RHP_MutltiDOFTrajectoryMsg.py" respawn="true" output="screen"/>      
+      <node pkg="geometric_controller" name="trajectory_in_camera_fov" type="MultiDOFTrajectory_in_camera_fov.py"  respawn="true" output="screen"/>
+      <node pkg="rosbag" type="record" name="record_image" args="-O $(arg run_number) $(arg d435_imagetopic)" required="true"/>  
+      <!--node pkg="rosbag" type="record" name="record" args="record -O $(arg run_number) $(arg d435_imagetopic) $(arg d435_voxel_cloud) $(arg transform)" required="true"/would record pointcloud and transforms but takes memory--> 
+
+  </group>
+
+
+</launch>

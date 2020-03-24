@@ -116,7 +116,7 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-catkin_install_python(PROGRAMS src/position_velocity_controller.py src/motor_speeds.py src/trajectory_R1.py
+catkin_install_python(PROGRAMS src/fast_propagate.py src/px4_offboard_control_RHP_MutltiDOFTrajectoryMsg.py src/MultiDOFTrajectory_in_camera_fov.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 ###########
 ## Build ##

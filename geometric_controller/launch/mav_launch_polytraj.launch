@@ -1,15 +1,53 @@
-<?xml version="1.0"?>
 <launch>
-  <arg name="mav_name" default="firefly"/>
-  <arg name="world_name" default="basic"/>
-  <arg name="enable_logging" default="false"/>
-  <arg name="image_def" default="vi_sensor/camera_depth/depth"/>
+  <!-- vim: set ft=xml noet : -->
+  <!-- example launch script for PX4 based FCU's -->
 
-  <group ns="$(arg mav_name)">
-      <node pkg="geometric_controller" name="firefly_PositionVelocityController" type="position_velocity_controller_R5_test.py" respawn="true"/>
-      <node pkg="geometric_controller" name="polynomial_trajectory" type="polynomial_trajectory_generator.py" respawn="true" output="screen"/>
-      <remap from="odometry" to="odometry_sensor1/odometry" />	
-     
+  <!--arg name="fcu_url" default="/dev/ttyACM0:921600" />
+  <arg name="gcs_url" default="udp://@192.168.1.160" />
+  <arg name="tgt_system" default="1" />
+  <arg name="tgt_component" default="1" />
+  <arg name="log_output" default="screen" />
+  <arg name="fcu_protocol" default="v2.0" />
+  <arg name="respawn_mavros" default="false" />
+  <include file="$(find mavros)/launch/node.launch">
+     <arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
+     <arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" />
+     <arg name="fcu_url" value="$(arg fcu_url)" />
+     <arg name="gcs_url" value="$(arg gcs_url)" />
+     <arg name="tgt_system" value="$(arg tgt_system)" />
+     <arg name="tgt_component" value="$(arg tgt_component)" />
+     <arg name="log_output" value="$(arg log_output)" />
+     <arg name="fcu_protocol" value="$(arg fcu_protocol)" />
+     <arg name="respawn_mavros" default="$(arg respawn_mavros)" />     
+  </include-->
+
+  <group ns="udrone1">
+      
+      <rosparam param="initial_position">[0.0,0.0,0.12]</rosparam>
+      <rosparam param="initial_orientation">[0, 0, 0, 1]</rosparam>
+      <rosparam param="goal_point">[0.5, 0.0, 1.0]</rosparam>
+      <rosparam param="desired_direction">[1, 0, 0]</rosparam>	
+      <param name="uav_velocity" value="1.0"/>
+      <param name="velocity_during_hover_land" value="0.2"/>
+      <param name="polynomial_order" value="7"/>
+      <param name="state_estimator_frequency" value="30.0"/>
+      <param name="initial_hovering_height" value="1.0"/>
+      <param name="initial_hovering_time" value="15"/>
+
+      <param name="uav_name" value="udrone"/>
+      <param name="local_name" value="udrone1"/>
+      <param name="number" value="1"/>
+      <param name="publish_frequency" value="100.0"/>
+      <rosparam param="kx">[4.5, 4.5, 4.5]</rosparam>
+      <rosparam param="kv">[2.25, 2.25, 2.25]</rosparam>
+      <param name="mass" value="1.78"/>
+      <param name="normalized_thrust_constant" value="34.0"/>
+      <param name="rate_gain" value="0.175"/>	
+      <param name="px4imu_frequency" value="140.0"/>
+
+      <node pkg="geometric_controller" name="sendcommandtopx4" type="px4_offboard_control_polytraj.py" respawn="true" output="screen"/>
+      <node pkg="geometric_controller" type="trajectory_from_waypoints.py" name="trajectory_from_waypoints" respawn="true" output="screen"/>
+      
   </group>
 
 </launch>

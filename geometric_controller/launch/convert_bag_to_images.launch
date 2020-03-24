@@ -1,0 +1,16 @@
+<!---->
+<launch>
+
+  <node pkg="rosbag" type="play" name="rosbag" args="-d 0.067 /home/pelican/data_collection/31.bag"/>
+
+  <node name="extract" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="ROS_HOME">
+
+    <remap from="image" to="/udrone1/d435/color/image_raw"/>
+    <param name="filename_format" value="/home/pelican/data_collection/oa_3ms/bag31_%00i.jpg"/>
+  </node>
+  <!--node name="extract2" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="node">
+    <remap from="image" to="/udrone1/d435/color/image_raw"/>
+    <param name="filename_format" value="/home/pelican/data_collections/image_for_detection/frame%00i.jpg"/>
+  </node-->
+
+</launch>
